@@ -114,7 +114,9 @@ func NewL1CostFunc(config *params.ChainConfig, statedb StateGetter) L1CostFunc {
 	forBlock := ^uint64(0)
 	var cachedFunc l1CostFunc
 	return func(rollupCostData RollupCostData, blockTime uint64) *big.Int {
+		log.Info("L1CostFunc impl", "config Ecotone:", config.IsOptimismEcotone(blockTime), "config isRegolith", config.IsRegolith(blockTime))
 		if rollupCostData == (RollupCostData{}) {
+			log.Info("rollupCostData", rollupCostData)
 			return nil // Do not charge if there is no rollup cost-data (e.g. RPC call or deposit).
 		}
 		if forBlock != blockTime {
@@ -128,10 +130,12 @@ func NewL1CostFunc(config *params.ChainConfig, statedb StateGetter) L1CostFunc {
 			// point to allow deposit transactions from the block to be processed first by state
 			// transition.  This behavior is consensus critical!
 			if !config.IsOptimismEcotone(blockTime) {
+				log.Info("enter newL1CostFuncBedrock")
 				cachedFunc = newL1CostFuncBedrock(config, statedb, blockTime)
 			} else {
 				l1BlobBaseFee := statedb.GetState(L1BlockAddr, L1BlobBaseFeeSlot).Big()
 				l1FeeScalars := statedb.GetState(L1BlockAddr, L1FeeScalarsSlot).Bytes()
+				log.Info("enter IsOptimismEcotone logic", "l1BlobBaseFee", l1BlobBaseFee, "l1FeeScalars", l1FeeScalars)
 
 				// Edge case: the very first Ecotone block requires we use the Bedrock cost
 				// function. We detect this scenario by checking if the Ecotone parameters are
@@ -143,6 +147,7 @@ func NewL1CostFunc(config *params.ChainConfig, statedb StateGetter) L1CostFunc {
 					cachedFunc = newL1CostFuncBedrock(config, statedb, blockTime)
 				} else {
 					l1BaseFee := statedb.GetState(L1BlockAddr, L1BaseFeeSlot).Big()
+					log.Info("l1BlobBaseFee is not zero, l1BaseFee", l1BaseFee)
 					offset := scalarSectionStart
 					l1BaseFeeScalar := new(big.Int).SetBytes(l1FeeScalars[offset : offset+4])
 					l1BlobBaseFeeScalar := new(big.Int).SetBytes(l1FeeScalars[offset+4 : offset+8])
@@ -151,6 +156,8 @@ func NewL1CostFunc(config *params.ChainConfig, statedb StateGetter) L1CostFunc {
 			}
 		}
 		fee, _ := cachedFunc(rollupCostData)
+
+		log.Info("calculated l1 fee", fee)
 		return fee
 	}
 }
