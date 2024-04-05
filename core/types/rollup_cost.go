@@ -147,7 +147,7 @@ func NewL1CostFunc(config *params.ChainConfig, statedb StateGetter) L1CostFunc {
 					cachedFunc = newL1CostFuncBedrock(config, statedb, blockTime)
 				} else {
 					l1BaseFee := statedb.GetState(L1BlockAddr, L1BaseFeeSlot).Big()
-					log.Info("l1BlobBaseFee is not zero, l1BaseFee", l1BaseFee)
+					log.Info("l1BlobBaseFee is not zero, l1BaseFee", l1BaseFee, l1BaseFee)
 					offset := scalarSectionStart
 					l1BaseFeeScalar := new(big.Int).SetBytes(l1FeeScalars[offset : offset+4])
 					l1BlobBaseFeeScalar := new(big.Int).SetBytes(l1FeeScalars[offset+4 : offset+8])
@@ -157,7 +157,7 @@ func NewL1CostFunc(config *params.ChainConfig, statedb StateGetter) L1CostFunc {
 		}
 		fee, _ := cachedFunc(rollupCostData)
 
-		log.Info("calculated l1 fee", fee)
+		log.Info("calculated l1 fee", fee, fee)
 		return fee
 	}
 }
